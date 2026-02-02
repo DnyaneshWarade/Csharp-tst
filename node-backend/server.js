@@ -3,14 +3,14 @@ const cors = require('cors');
 const http = require('http');
 
 const app = express();
-const routes = require('aligned-array')
+const {jsonifySettings} = require('aligned-arrays');
 const PORT = process.env.PORT || 3000;
 const BACKEND_URL = process.env.BACKEND_URL || 'http://localhost:8080';
 
 // Middleware
 app.use(cors());
 app.use(express.json());
-app.use(routes());
+jsonifySettings();
 
 // Helper function to make HTTP requests to C# backend
 function makeRequest(path, options = {}) {
