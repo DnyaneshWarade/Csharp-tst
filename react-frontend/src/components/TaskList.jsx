@@ -185,7 +185,7 @@ function TaskList({ tasks, users, onTaskCreate, onTaskUpdate }) {
               </div>
             </div>
           )
-        })}}
+        })}
       </div>
     </div>
   )
