@@ -1,71 +1,65 @@
 const express = require('express');
 const cors = require('cors');
-const http = require('http');
+const axios = require('axios');
 
 const app = express();
-const {jsonifySettings} = require('aligned-arrays');
 const PORT = process.env.PORT || 3000;
 const BACKEND_URL = process.env.BACKEND_URL || 'http://localhost:8080';
 
 // Middleware
 app.use(cors());
 app.use(express.json());
-jsonifySettings();
 
-// Helper function to make HTTP requests to C# backend
-function makeRequest(path, options = {}) {
-  return new Promise((resolve, reject) => {
-    const url = new URL(path, BACKEND_URL);
-    const requestOptions = {
-      hostname: url.hostname,
-      port: url.port || 8080,
-      path: url.pathname + url.search,
+// Helper function to make HTTP requests to C# backend using axios
+async function makeRequest(path, options = {}) {
+  try {
+    const url = `${BACKEND_URL}${path}`;
+    console.log(`Making request to C# backend: ${url}`);
+    console.log(`Method: ${options.method || 'GET'}`);
+    if (options.body) {
+      console.log(`Body:`, JSON.stringify(options.body, null, 2));
+    }
+
+    const config = {
       method: options.method || 'GET',
+      url: url,
       headers: {
         'Content-Type': 'application/json',
         ...options.headers
-      }
+      },
+      timeout: 10000
     };
 
-    const req = http.request(requestOptions, (res) => {
-      let data = '';
-      res.on('data', (chunk) => {
-        data += chunk;
-      });
-      res.on('end', () => {
-        if (res.statusCode >= 200 && res.statusCode < 300) {
-          try {
-            resolve(JSON.parse(data));
-          } catch (e) {
-            resolve(data);
-          }
-        } else {
-          // Try to parse error response as JSON
-          let errorMessage = data;
-          try {
-            const errorData = JSON.parse(data);
-            errorMessage = errorData.error || errorData.message || data;
-          } catch (e) {
-            // Keep original error message if not JSON
-          }
-          const error = new Error(errorMessage);
-          error.statusCode = res.statusCode;
-          error.responseData = data;
-          reject(error);
-        }
-      });
-    });
-
-    req.on('error', (error) => {
-      reject(error);
-    });
-
     if (options.body) {
-      req.write(JSON.stringify(options.body));
+      config.data = options.body;
     }
 
-    req.end();
-  });
+    const response = await axios(config);
+    console.log(`C# backend response status: ${response.status}`);
+    console.log(`C# backend response data:`, response.data);
+    
+    return response.data;
+  } catch (error) {
+    console.log(`C# backend error:`, error.message);
+    if (error.response) {
+      console.log(`C# backend response status: ${error.response.status}`);
+      console.log(`C# backend response data:`, error.response.data);
+      
+      const errorMessage = error.response.data?.error || 
+                          error.response.data?.message || 
+                          error.response.data || 
+                          `Request failed with status ${error.response.status}`;
+      
+      const newError = new Error(errorMessage);
+      newError.statusCode = error.response.status;
+      newError.responseData = error.response.data;
+      throw newError;
+    } else if (error.request) {
+      throw new Error('No response from C# backend. Is it running?');
+    } else {
+      throw new Error(error.message || 'An unexpected error occurred');
+    }
+  }
 }
 
 // Health check endpoint
@@ -91,6 +85,7 @@ app.get('/health', async (req, res) => {
 app.get('/api/users', async (req, res) => {
   try {
     const response = await makeRequest('/api/users');
+    console.log('Fetched users:', response);
     res.json(response);
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -112,6 +107,7 @@ app.get('/api/users/:id', async (req, res) => {
 
 app.post('/api/users', async (req, res) => {
   try {
+    console.log('Received user creation request with data:', req.body);
     const response = await makeRequest('/api/users', {
       method: 'POST',
       body: req.body
@@ -119,6 +115,22 @@ app.post('/api/users', async (req, res) => {
     res.status(201).json(response);
   } catch (error) {
     const statusCode = error.statusCode || (error.message.includes('400') ? 400 : 500);
+    res.status(statusCode).json({ error: error.message });
+  }
+});
+
+app.put('/api/users/:id', async (req, res) => {
+  try {
+    console.log('Received user update request with data:', req.body);
+    const response = await makeRequest(`/api/users/${req.params.id}`, {
+      method: 'PUT',
+      body: req.body
+    });
+    res.json(response);
+  } catch (error) {
+    const statusCode = error.statusCode || 
+      (error.message.includes('404') || error.message.includes('not found') ? 404 :
+       error.message.includes('400') ? 400 : 500);
     res.status(statusCode).json({ error: error.message });
   }
 });

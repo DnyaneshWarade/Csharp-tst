@@ -56,6 +56,16 @@ export const getUsers = async () => {
   return response.data
 }
 
+export const createUser = async (userData) => {
+  const response = await apiClient.post('/api/users', userData)
+  return response.data
+}
+
+export const updateUser = async (id, userData) => {
+  const response = await apiClient.put(`/api/users/${id}`, userData)
+  return response.data
+}
+
 export const getUserById = async (id) => {
   const response = await apiClient.get(`/api/users/${id}`)
   return response.data
@@ -67,6 +77,16 @@ export const getTasks = async (status = '', userId = '') => {
   if (userId) params.userId = userId
   
   const response = await apiClient.get('/api/tasks', { params })
+  return response.data
+}
+
+export const createTask = async (taskData) => {
+  const response = await apiClient.post('/api/tasks', taskData)
+  return response.data
+}
+
+export const updateTask = async (id, taskData) => {
+  const response = await apiClient.put(`/api/tasks/${id}`, taskData)
   return response.data
 }
 

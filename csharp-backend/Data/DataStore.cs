@@ -76,6 +76,90 @@ public class DataStore
         }
     }
 
+    public User CreateUser(string name, string email, string role)
+    {
+        _lock.EnterWriteLock();
+        try
+        {
+            var newId = _users.Count > 0 ? _users.Max(u => u.Id) + 1 : 1;
+            var user = new User
+            {
+                Id = newId,
+                Name = name,
+                Email = email,
+                Role = role
+            };
+            
+            _users.Add(user);
+            return user;
+        }
+        finally
+        {
+            _lock.ExitWriteLock();
+        }
+    }
+
+    public TaskItem CreateTask(string title, string status, int userId)
+    {
+        _lock.EnterWriteLock();
+        try
+        {
+            var newId = _tasks.Count > 0 ? _tasks.Max(t => t.Id) + 1 : 1;
+            var task = new TaskItem
+            {
+                Id = newId,
+                Title = title,
+                Status = status,
+                UserId = userId
+            };
+            
+            _tasks.Add(task);
+            return task;
+        }
+        finally
+        {
+            _lock.ExitWriteLock();
+        }
+    }
+
+    public User? UpdateUser(int id, string name, string email, string role)
+    {
+        _lock.EnterWriteLock();
+        try
+        {
+            var user = _users.FirstOrDefault(u => u.Id == id);
+            if (user == null) return null;
+            
+            user.Name = name;
+            user.Email = email;
+            user.Role = role;
+            return user;
+        }
+        finally
+        {
+            _lock.ExitWriteLock();
+        }
+    }
+
+    public TaskItem? UpdateTask(int id, string title, string status, int userId)
+    {
+        _lock.EnterWriteLock();
+        try
+        {
+            var task = _tasks.FirstOrDefault(t => t.Id == id);
+            if (task == null) return null;
+            
+            task.Title = title;
+            task.Status = status;
+            task.UserId = userId;
+            return task;
+        }
+        finally
+        {
+            _lock.ExitWriteLock();
+        }
+    }
+
     public StatsResponse GetStats()
     {
         _lock.EnterReadLock();

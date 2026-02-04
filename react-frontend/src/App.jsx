@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import './App.css'
-import { getUsers, getUserById, getTasks, getStats, checkHealth } from './services/api'
+import { getUsers, createUser, updateUser, getUserById, getTasks, createTask, updateTask, getStats, checkHealth } from './services/api'
 import UserList from './components/UserList'
 import TaskList from './components/TaskList'
 import Stats from './components/Stats'
@@ -39,6 +39,9 @@ function App() {
       setUsers(usersData.users || [])
       setTasks(tasksData.tasks || [])
       setStats(statsData)
+      
+      console.log('Loaded users:', usersData.users)
+      console.log('Users state:', usersData.users || [])
     } catch (err) {
       setError(err.message || 'Failed to load data')
       console.error('Error loading data:', err)
@@ -75,6 +78,90 @@ function App() {
     } catch (err) {
       setError(err.message || 'Failed to filter tasks')
       console.error('Error filtering tasks:', err)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleUserCreate = async (userData) => {
+    setLoading(true)
+    setError(null)
+    try {
+      console.log('Creating user with data:', userData)
+      await createUser(userData)
+      // Refresh the users list
+      const usersData = await getUsers()
+      setUsers(usersData.users || [])
+      // Also refresh stats
+      const statsData = await getStats()
+      setStats(statsData)
+    } catch (err) {
+      setError(err.message || 'Failed to create user')
+      console.error('Error creating user:', err)
+      throw err // Re-throw to let the form handle the error
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleTaskCreate = async (taskData) => {
+    setLoading(true)
+    setError(null)
+    try {
+      console.log('Creating task with data:', taskData)
+      await createTask(taskData)
+      // Refresh the tasks list
+      const tasksData = await getTasks()
+      setTasks(tasksData.tasks || [])
+      // Also refresh stats
+      const statsData = await getStats()
+      setStats(statsData)
+    } catch (err) {
+      setError(err.message || 'Failed to create task')
+      console.error('Error creating task:', err)
+      throw err // Re-throw to let the form handle the error
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleUserUpdate = async (id, userData) => {
+    setLoading(true)
+    setError(null)
+    try {
+      console.log('Updating user with data:', userData)
+      await updateUser(id, userData)
+      // Refresh the users list
+      const usersData = await getUsers()
+      setUsers(usersData.users || [])
+      // Also refresh stats if needed
+      const statsData = await getStats()
+      setStats(statsData)
+    } catch (err) {
+      setError(err.message || 'Failed to update user')
+      console.error('Error updating user:', err)
+      throw err
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleTaskUpdate = async (id, taskData) => {
+    setLoading(true)
+    setError(null)
+    try {
+      console.log('Updating task with data:', taskData)
+      await updateTask(id, taskData)
+      // Refresh the tasks list
+      const tasksData = await getTasks()
+      setTasks(tasksData.tasks || [])
+      // Also refresh stats
+      const statsData = await getStats()
+      setStats(statsData)
+    } catch (err) {
+      setError(err.message || 'Failed to update task')
+      console.error('Error updating task:', err)
+      throw err
     } finally {
       setLoading(false)
     }
@@ -118,6 +205,8 @@ function App() {
                 users={users}
                 selectedUserId={selectedUserId}
                 onUserSelect={handleUserSelect}
+                onUserCreate={handleUserCreate}
+                onUserUpdate={handleUserUpdate}
               />
             )}
             {selectedUser && (
@@ -165,7 +254,12 @@ function App() {
             {loading && !tasks.length ? (
               <div className="loading">Loading tasks...</div>
             ) : (
-              <TaskList tasks={tasks} />
+              <TaskList 
+                tasks={tasks} 
+                users={users}
+                onTaskCreate={handleTaskCreate}
+                onTaskUpdate={handleTaskUpdate}
+              />
             )}
           </div>
         </div>
