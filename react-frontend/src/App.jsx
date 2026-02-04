@@ -5,6 +5,7 @@ import UserList from './components/UserList'
 import TaskList from './components/TaskList'
 import Stats from './components/Stats'
 import HealthStatus from './components/HealthStatus'
+import Metrics from './components/Metrics'
 
 function App() {
   const [users, setUsers] = useState([])
@@ -16,6 +17,7 @@ function App() {
   const [selectedUserId, setSelectedUserId] = useState(null)
   const [selectedUser, setSelectedUser] = useState(null)
   const [taskFilter, setTaskFilter] = useState('')
+  const [activeTab, setActiveTab] = useState('dashboard')
 
   useEffect(() => {
     loadInitialData()
@@ -178,7 +180,22 @@ function App() {
     <div className="app">
       <header className="app-header">
         <h1>Go Developer Test Project</h1>
-        <p>React Frontend → Node.js Backend → Go Backend</p>
+        <p>React Frontend → Node.js Backend → C# Backend</p>
+        
+        <nav className="app-nav">
+          <button 
+            className={`nav-btn ${activeTab === 'dashboard' ? 'active' : ''}`}
+            onClick={() => setActiveTab('dashboard')}
+          >
+            📊 Dashboard
+          </button>
+          <button 
+            className={`nav-btn ${activeTab === 'metrics' ? 'active' : ''}`}
+            onClick={() => setActiveTab('metrics')}
+          >
+            📈 Metrics
+          </button>
+        </nav>
       </header>
 
       <HealthStatus health={health} />
@@ -190,80 +207,84 @@ function App() {
         </div>
       )}
 
-      <div className="main-content">
-        <div className="stats-section">
-          {stats && <Stats stats={stats} />}
-        </div>
+      {activeTab === 'dashboard' && (
+        <div className="main-content">
+          <div className="stats-section">
+            {stats && <Stats stats={stats} />}
+          </div>
 
-        <div className="data-section">
-          <div className="panel">
-            <h2>Users</h2>
-            {loading && !users.length ? (
-              <div className="loading">Loading users...</div>
-            ) : (
-              <UserList
-                users={users}
-                selectedUserId={selectedUserId}
-                onUserSelect={handleUserSelect}
-                onUserCreate={handleUserCreate}
-                onUserUpdate={handleUserUpdate}
-              />
-            )}
-            {selectedUser && (
-              <div className="user-details">
-                <h3>Selected User Details</h3>
-                <div className="detail-card">
-                  <p><strong>Name:</strong> {selectedUser.name}</p>
-                  <p><strong>Email:</strong> {selectedUser.email}</p>
-                  <p><strong>Role:</strong> {selectedUser.role}</p>
+          <div className="data-section">
+            <div className="panel">
+              <h2>Users</h2>
+              {loading && !users.length ? (
+                <div className="loading">Loading users...</div>
+              ) : (
+                <UserList
+                  users={users}
+                  selectedUserId={selectedUserId}
+                  onUserSelect={handleUserSelect}
+                  onUserCreate={handleUserCreate}
+                  onUserUpdate={handleUserUpdate}
+                />
+              )}
+              {selectedUser && (
+                <div className="user-details">
+                  <h3>Selected User Details</h3>
+                  <div className="detail-card">
+                    <p><strong>Name:</strong> {selectedUser.name}</p>
+                    <p><strong>Email:</strong> {selectedUser.email}</p>
+                    <p><strong>Role:</strong> {selectedUser.role}</p>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <div className="panel">
+              <div className="panel-header">
+                <h2>Tasks</h2>
+                <div className="filter-buttons">
+                  <button
+                    className={taskFilter === '' ? 'active' : ''}
+                    onClick={() => handleTaskFilter('')}
+                  >
+                    All
+                  </button>
+                  <button
+                    className={taskFilter === 'pending' ? 'active' : ''}
+                    onClick={() => handleTaskFilter('pending')}
+                  >
+                    Pending
+                  </button>
+                  <button
+                    className={taskFilter === 'in-progress' ? 'active' : ''}
+                    onClick={() => handleTaskFilter('in-progress')}
+                  >
+                    In Progress
+                  </button>
+                  <button
+                    className={taskFilter === 'completed' ? 'active' : ''}
+                    onClick={() => handleTaskFilter('completed')}
+                  >
+                    Completed
+                  </button>
                 </div>
               </div>
-            )}
-          </div>
-
-          <div className="panel">
-            <div className="panel-header">
-              <h2>Tasks</h2>
-              <div className="filter-buttons">
-                <button
-                  className={taskFilter === '' ? 'active' : ''}
-                  onClick={() => handleTaskFilter('')}
-                >
-                  All
-                </button>
-                <button
-                  className={taskFilter === 'pending' ? 'active' : ''}
-                  onClick={() => handleTaskFilter('pending')}
-                >
-                  Pending
-                </button>
-                <button
-                  className={taskFilter === 'in-progress' ? 'active' : ''}
-                  onClick={() => handleTaskFilter('in-progress')}
-                >
-                  In Progress
-                </button>
-                <button
-                  className={taskFilter === 'completed' ? 'active' : ''}
-                  onClick={() => handleTaskFilter('completed')}
-                >
-                  Completed
-                </button>
-              </div>
+              {loading && !tasks.length ? (
+                <div className="loading">Loading tasks...</div>
+              ) : (
+                <TaskList 
+                  tasks={tasks} 
+                  users={users}
+                  onTaskCreate={handleTaskCreate}
+                  onTaskUpdate={handleTaskUpdate}
+                />
+              )}
             </div>
-            {loading && !tasks.length ? (
-              <div className="loading">Loading tasks...</div>
-            ) : (
-              <TaskList 
-                tasks={tasks} 
-                users={users}
-                onTaskCreate={handleTaskCreate}
-                onTaskUpdate={handleTaskUpdate}
-              />
-            )}
           </div>
         </div>
-      </div>
+      )}
+
+      {activeTab === 'metrics' && <Metrics />}
 
       <footer className="app-footer">
         <button onClick={handleRefresh} className="refresh-btn">

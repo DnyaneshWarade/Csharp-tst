@@ -1,10 +1,13 @@
 using CsharpBackend.Data;
 using CsharpBackend.Models;
+using CsharpBackend.Services;
+using CsharpBackend.Middleware;
 using System.Text.Json;
 
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddSingleton<DataStore>();
+builder.Services.AddSingleton<MetricsService>();
 
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
@@ -28,6 +31,10 @@ builder.Services.AddCors(options =>
 
 var app = builder.Build();
 
+// Add custom middleware
+app.UseMiddleware<RateLimitingMiddleware>();
+app.UseMiddleware<MetricsMiddleware>();
+
 app.UseCors();
 
 if (app.Environment.IsDevelopment())
@@ -36,7 +43,7 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
-const int defaultPort = 8080;
+const int defaultPort = 8081;
 var portEnv = Environment.GetEnvironmentVariable("PORT");
 if (!int.TryParse(portEnv, out var port))
 {
@@ -50,6 +57,13 @@ app.MapGet("/health", () =>
         Status = "ok",
         Message = "C# backend is running"
     });
+});
+
+// Metrics endpoint
+app.MapGet("/metrics", (MetricsService metrics) =>
+{
+    var snapshot = metrics.GetSnapshot();
+    return Results.Json(snapshot);
 });
 
 app.MapGet("/api/users", (DataStore store) =>
@@ -200,6 +214,12 @@ app.MapGet("/api/stats", (DataStore store) =>
 {
     var stats = store.GetStats();
     return Results.Json(stats);
+});
+
+app.MapGet("/api/metrics", (MetricsService metrics) =>
+{
+    var metricsData = metrics.GetSnapshot();
+    return Results.Json(metricsData);
 });
 
 app.Run($"http://0.0.0.0:{port}");
